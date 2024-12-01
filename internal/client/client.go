@@ -1,4 +1,4 @@
-package netcli
+package client
 
 import (
 	"bufio"
@@ -8,9 +8,9 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/adzsx/gwire/internal/netutils"
 	"github.com/adzsx/gwire/internal/utils"
 	"github.com/adzsx/gwire/pkg/crypt"
 )
@@ -18,44 +18,17 @@ import (
 var (
 	conn net.Conn
 	err  error
+
+	inpHost      string
+	inpPort      string
+	inpHandshake bool
+	inpEnc       string
+	inpUsername  string
+	displayTime  bool
 )
 
-// Function connects to host with TCP
-func ClientSetup(input utils.Input) {
-	log.SetFlags(0)
-	if input.Time {
-		log.SetFlags(log.Ltime)
-	}
-
-	// Connect to host
-
-	if input.Ip != "scan" {
-		conn, err = net.Dial("tcp", input.Ip+":"+input.Port[0])
-	} else {
-		// Scan every host in network for open port
-		hosts, err := GetHosts(Subnet())
-
-		utils.Err(err, true)
-		input.Ip, conn = ScanRange(hosts, input.Port[0])
-	}
-
-	if err != nil && strings.Contains(err.Error(), "connect: connection refused") {
-		utils.Err(errors.New("connection refused by destination"), true)
-	}
-
-	utils.Print("Connected to "+input.Ip+":"+input.Port[0]+"\n", 0)
-
-	if input.Enc == "auto" {
-		input, err = initClient(input, conn)
-		utils.Err(err, true)
-	}
-
-	utils.Print("Setup finished", 1)
-	client(input, conn)
-}
-
 // Function for ongoing connection
-func client(input utils.Input, conn net.Conn) {
+func client(conn net.Conn) {
 	// Receive Data
 
 	utils.Print("Started client routine", 3)
@@ -93,16 +66,16 @@ func client(input utils.Input, conn net.Conn) {
 		var data string
 
 		for {
-			time.Sleep(time.Millisecond * time.Duration(input.TimeOut))
+			//time.Sleep(time.Millisecond * time.Duration(input.TimeOut))
 
 			if len(received) != 0 {
-				if len([]byte(input.Enc)) != 0 {
-					data = crypt.DecryptAES(received[0], []byte(input.Enc))
+				if len([]byte(inpEnc)) != 0 {
+					data = crypt.DecryptAES(received[0], []byte(inpEnc))
 				} else {
 					data = received[0]
 				}
 
-				AddMsg(data, false)
+				netutils.AddMsg(data, false)
 
 				received = utils.Remove(received, received[0])
 
@@ -117,7 +90,7 @@ func client(input utils.Input, conn net.Conn) {
 		reader := bufio.NewReader(os.Stdin)
 
 		log.SetFlags(0)
-		if input.Time {
+		if displayTime {
 			log.SetFlags(log.Ltime)
 		}
 
@@ -126,22 +99,22 @@ func client(input utils.Input, conn net.Conn) {
 			fmt.Print(">")
 			time.Sleep(time.Millisecond * 100)
 
-			text := input.Username + "> "
+			text := inpUsername + "> "
 
 			inp, _ := reader.ReadString('\n')
 			text += inp
 
 			utils.Ansi("\033[1A\033[K")
 
-			AddMsg(text, false)
+			netutils.AddMsg(text, false)
 
 			if len(text) > 16384 {
 				log.Println("Message cant be over 16384 characters long")
 				break
 			}
 
-			if len([]byte(input.Enc)) != 0 {
-				conn.Write([]byte(crypt.EncryptAES(text, []byte(input.Enc))))
+			if len([]byte(inpEnc)) != 0 {
+				conn.Write([]byte(crypt.EncryptAES(text, []byte(inpEnc))))
 			} else {
 				conn.Write([]byte(text))
 			}
@@ -152,7 +125,7 @@ func client(input utils.Input, conn net.Conn) {
 }
 
 // Func for setting up RSA encryption for the clientcs
-func initClient(input utils.Input, conn net.Conn) (utils.Input, error) {
+func initClient(conn net.Conn) error {
 
 	utils.Print("Generating RSA Keys", 1)
 	var rsaKeys = crypt.GenKeys()
@@ -168,18 +141,18 @@ func initClient(input utils.Input, conn net.Conn) (utils.Input, error) {
 	bytes, err := conn.Read(buffer)
 	if err != nil {
 		log.Println("Connection unexpectedly closed. Aborting Setup")
-		return input, errors.New("connection failed")
+		return errors.New("connection failed")
 	}
 	data := string(buffer[:bytes])
 
 	passwd := crypt.DecryptRSA(rsaKeys, []byte(data))
 
-	input.Enc = passwd
+	inpEnc = passwd
 
 	utils.Print("Password received", 1)
 	utils.Print("Seinding Password confirmation package", 2)
 
-	conn.Write([]byte(crypt.EncryptAES(input.Enc, []byte(input.Enc))))
+	conn.Write([]byte(crypt.EncryptAES(inpEnc, []byte(inpEnc))))
 
 	utils.Print("Waiting for Control package", 2)
 
@@ -187,14 +160,14 @@ func initClient(input utils.Input, conn net.Conn) (utils.Input, error) {
 	bytes, err = conn.Read(buffer)
 	utils.Err(err, true)
 	data = string(buffer[:bytes])
-	data = crypt.DecryptAES(data, []byte(input.Enc))
+	data = crypt.DecryptAES(data, []byte(inpEnc))
 
 	utils.Print("Received Control Package", 2)
 
 	if string(data) == "wrong password" {
 		log.Println("Wrong password. Aborting connection")
-		return input, errors.New("wrong password")
+		return errors.New("wrong password")
 	}
 
-	return input, nil
+	return nil
 }

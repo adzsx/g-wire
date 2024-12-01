@@ -2,10 +2,17 @@ package utils
 
 import (
 	"fmt"
+	"runtime"
+
 	"log"
 	"math/rand"
 	"os"
 	"strings"
+)
+
+var (
+	verbose int
+	format  bool = true
 )
 
 func Err(err error, critical bool) {
@@ -31,6 +38,10 @@ func InSlice(s []string, str string) bool {
 
 // Verbose print
 func Print(v any, level int) {
+
+	if runtime.GOOS == "windows" {
+		return
+	}
 
 	Ansi("\033[33m")
 	Ansi("\x1b[s\033[999B")

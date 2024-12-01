@@ -1,10 +1,5 @@
 package utils
 
-import (
-	"errors"
-	"strings"
-)
-
 /*
 type Input struct {
 	Action   string
@@ -17,30 +12,30 @@ type Input struct {
 }
 */
 
-func CheckInput(input Input) error {
-	var missing []string
-	if input.Action == "" {
-		missing = append(missing, "action")
-	}
+// func CheckInput(input Input) error {
+// 	var missing []string
+// 	if input.Action == "" {
+// 		missing = append(missing, "action")
+// 	}
 
-	if input.Action == "info" || input.Action == "help" {
-		return nil
+// 	if input.Action == "info" || input.Action == "help" {
+// 		return nil
 
-	}
+// 	}
 
-	if input.Ip == "" && input.Action != "listen" {
-		missing = append(missing, "host")
-	}
+// 	if input.Ip == "" && input.Action != "listen" {
+// 		missing = append(missing, "host")
+// 	}
 
-	if len(input.Port) == 0 {
-		missing = append(missing, "port")
-	}
+// 	if len(input.Port) == 0 {
+// 		missing = append(missing, "port")
+// 	}
 
-	if len(missing) == 1 {
-		return errors.New("missing value for: " + missing[0])
-	} else if len(missing) > 1 {
-		return errors.New("missing values for: " + strings.Join(missing, ", "))
-	}
+// 	if len(missing) == 1 {
+// 		return errors.New("missing value for: " + missing[0])
+// 	} else if len(missing) > 1 {
+// 		return errors.New("missing values for: " + strings.Join(missing, ", "))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

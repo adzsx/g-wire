@@ -1,4 +1,4 @@
-package netcli
+package host
 
 import (
 	"bufio"
@@ -12,68 +12,29 @@ import (
 	"sync"
 	"time"
 
+	"github.com/adzsx/gwire/internal/netutils"
 	"github.com/adzsx/gwire/internal/utils"
 	"github.com/adzsx/gwire/pkg/crypt"
 )
 
 var (
-	auto      bool
-	wg        sync.WaitGroup
-	sent      int
-	colorList []string = []string{"\033[92m", "\033[94m", "\033[95m", "\033[96m"}
+	auto bool
+	wg   sync.WaitGroup
+	sent int
+
+	host        string
+	port        string
+	handshake   bool
+	enc         string
+	username    string
+	displayTime bool
 )
 
-// Set up listener for each port on list
-func HostSetup(input utils.Input) {
-	// Global slice for distributing messages
-	var message = [][]string{}
-
-	if input.Enc == "auto" {
-		auto = true
-		var err error
-		utils.Print("Generating password\n", 2)
-		input.Enc, err = crypt.GenPasswd()
-		utils.Err(err, true)
-	}
-	// Set up listener for every port in range
-	for _, port := range input.Port {
-
-		// wg = WaitGroup (Variable to wait until variable hits 0)
-		wg.Add(1)
-
-		go connSetup(input, string(port), &message)
-
-	}
-
-	// Wait untill wg is 0
-	wg.Wait()
-
-	defer os.Exit(0)
-}
-
-func connSetup(input utils.Input, port string, message *[][]string) {
-
-	conn := listen(input, port)
-
-	if auto {
-		err := InitConn(input, conn)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	}
-
-	utils.Print("Setup finished\n", 1)
-
-	go host(input, conn, port, message)
-
-}
-
 // Set up connection to specific port
-func listen(input utils.Input, port string) net.Conn {
+func listen(port string) net.Conn {
 
 	log.SetFlags(0)
-	if input.Time {
+	if displayTime {
 		log.SetFlags(log.Ltime)
 	}
 
@@ -101,7 +62,7 @@ func listen(input utils.Input, port string) net.Conn {
 }
 
 // Listener loop for individual port
-func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
+func hostLoop(conn net.Conn, port string, message *[][]string) {
 
 	utils.Print("Started host routine", 3)
 
@@ -130,7 +91,7 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 
 			}
 
-			if len(input.Port) > 1 {
+			if len(port) > 1 {
 				*message = append(*message, []string{utils.FilterChar(conn.LocalAddr().String(), ":", false), data})
 			}
 		}
@@ -141,17 +102,17 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 	go func() {
 		var data string
 		for {
-			time.Sleep(time.Millisecond * time.Duration(input.TimeOut))
+			//time.Sleep(time.Millisecond * time.Duration(input.TimeOut))
 
 			if len(receivedHost) != 0 {
 
-				if len([]byte(input.Enc)) != 0 {
-					data = crypt.DecryptAES(receivedHost[0], []byte(input.Enc)) + "\n"
+				if len([]byte(enc)) != 0 {
+					data = crypt.DecryptAES(receivedHost[0], []byte(enc)) + "\n"
 				} else {
 					data = receivedHost[0] + "\n"
 				}
 
-				AddMsg(data, false)
+				netutils.AddMsg(data, false)
 
 				receivedHost = utils.Remove(receivedHost, receivedHost[0])
 			}
@@ -163,7 +124,7 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 
 		reader := bufio.NewReader(os.Stdin)
 		log.SetFlags(0)
-		if input.Time {
+		if displayTime {
 			log.SetFlags(log.Ltime)
 		}
 
@@ -172,24 +133,24 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 			fmt.Print(">")
 
 			// attach username
-			text := input.Username + "> "
+			text := username + "> "
 			inp, _ := reader.ReadString('\n')
 
 			text += inp
 
 			utils.Ansi("\033[1A\033[K")
 
-			AddMsg(text, false)
+			netutils.AddMsg(text, false)
 
 			if text[len(text)-1:] == "\n" {
 				text = strings.Replace(text, "\n", "", 1)
 			}
 
-			if len(input.Port) > 1 {
+			if len(port) > 1 {
 
-				if len(input.Enc) != 0 {
+				if len(enc) != 0 {
 
-					*message = append(*message, []string{"0", crypt.EncryptAES(text, []byte(input.Enc))})
+					*message = append(*message, []string{"0", crypt.EncryptAES(text, []byte(enc))})
 				} else {
 					*message = append(*message, []string{"0", text})
 				}
@@ -197,8 +158,8 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 				sent = -1
 
 			} else {
-				if len([]byte(input.Enc)) != 0 {
-					conn.Write([]byte(crypt.EncryptAES(text, []byte(input.Enc))))
+				if len([]byte(enc)) != 0 {
+					conn.Write([]byte(crypt.EncryptAES(text, []byte(enc))))
 				} else {
 					conn.Write([]byte(text))
 				}
@@ -207,7 +168,7 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 	}()
 
 	//send data from other clients
-	if len(input.Port) > 1 {
+	if len(port) > 1 {
 		go func() {
 			for {
 				time.Sleep(time.Millisecond * 100)
@@ -220,7 +181,7 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 						}
 						time.Sleep(time.Millisecond * 50)
 					}
-					if sent == len(input.Port)-1 {
+					if sent == len(port)-1 {
 						*message = [][]string{}
 						sent = 0
 					}
@@ -231,7 +192,7 @@ func host(input utils.Input, conn net.Conn, port string, message *[][]string) {
 	}
 }
 
-func InitConn(input utils.Input, conn net.Conn) error {
+func InitConn(conn net.Conn) error {
 	// Make buffer for receiving RSA public key
 	utils.Print("Waiting for RSA key from "+utils.FilterChar(conn.RemoteAddr().String(), ":", true)+"\n", 1)
 	buffer := make([]byte, 4096)
@@ -254,7 +215,7 @@ func InitConn(input utils.Input, conn net.Conn) error {
 
 	// Send encrypted AES key over connection
 	utils.Print("Sending Password", 2)
-	encKey := crypt.EncryptRSA(*publicKey, []byte(input.Enc))
+	encKey := crypt.EncryptRSA(*publicKey, []byte(enc))
 	conn.Write(encKey)
 
 	utils.Print("Waiting for password confirmation", 2)
@@ -266,12 +227,12 @@ func InitConn(input utils.Input, conn net.Conn) error {
 
 	utils.Print("Received password confirmation", 2)
 
-	if crypt.DecryptAES(data, []byte(input.Enc)) != input.Enc {
+	if crypt.DecryptAES(data, []byte(enc)) != enc {
 		conn.Write([]byte("wrong password"))
 		return errors.New("wrong password")
 	}
 
-	conn.Write([]byte(crypt.EncryptAES("success", []byte(input.Enc))))
+	conn.Write([]byte(crypt.EncryptAES("success", []byte(enc))))
 
 	return nil
 }
