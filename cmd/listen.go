@@ -16,9 +16,8 @@ var listenCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringP("port", "p", "", "Port of host to connect to")
+	listenCmd.Flags().StringSliceP("port", "p", []string{}, "Port of host to connect to")
 
-	listenCmd.Flags().BoolP("handshake", "s", true, "Perform a handshake with another gwire client")
 	listenCmd.Flags().BoolP("time", "t", true, "Display time for each message")
 	listenCmd.Flags().StringP("encrypt", "e", "auto", "Encryption to set up with handshake")
 	listenCmd.Flags().StringP("username", "u", "anonymous", "Username to perform handshake with")
@@ -26,13 +25,13 @@ func init() {
 }
 
 func listen(cmd *cobra.Command, args []string) {
-	port, _ := cmd.Flags().GetString("port")
+	ports, _ := cmd.Flags().GetStringSlice("port")
 
-	exchangeInfo, _ := cmd.Flags().GetBool("handshake")
+	exchangeInfo, _ := rootCmd.Flags().GetBool("setup")
 
 	username, _ := cmd.Flags().GetString("username")
 	enc, _ := cmd.Flags().GetString("encrypt")
 	time, _ := cmd.Flags().GetBool("time")
 	//timeout, _ := cmd.Flags().GetString("timeout")
-	host.HostSetup(port, exchangeInfo, enc, username, time)
+	host.HostSetup(ports, exchangeInfo, enc, username, time)
 }

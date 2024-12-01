@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	verbose int
-	format  bool = true
+	Verbose int
+	Format  bool
 )
 
 func Err(err error, critical bool) {
@@ -50,7 +50,7 @@ func Print(v any, level int) {
 
 	log.SetFlags(log.Ltime)
 
-	if verbose >= level {
+	if Verbose >= level {
 		log.Print("System: ", v)
 	}
 
@@ -58,7 +58,8 @@ func Print(v any, level int) {
 }
 
 func Ansi(inp string) {
-	if format {
+	log.Println(Format)
+	if Format {
 		fmt.Print(inp)
 	}
 }

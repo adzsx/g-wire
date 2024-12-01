@@ -22,8 +22,8 @@ var (
 	wg   sync.WaitGroup
 	sent int
 
-	port        string
-	handshake   bool
+	ports []string
+	//handshake   bool
 	enc         string
 	username    string
 	displayTime bool
@@ -128,7 +128,7 @@ func hostLoop(conn net.Conn, port string, message *[][]string) {
 		}
 
 		for {
-			fmt.Print("\033[999B\033[999D")
+			utils.Ansi("\033[999B\033[999D")
 			fmt.Print(">")
 
 			// attach username

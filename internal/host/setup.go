@@ -9,9 +9,9 @@ import (
 )
 
 // Set up listener for each port on list
-func HostSetup(inpPort string, inpHandshake bool, inpEnc string, inpUsername string, time bool) {
-	port = inpPort
-	handshake = inpHandshake
+func HostSetup(inpPort []string, inpHandshake bool, inpEnc string, inpUsername string, time bool) {
+	ports = inpPort
+	//handshake = inpHandshake
 	enc = inpEnc
 	username = inpUsername
 	displayTime = time
@@ -26,8 +26,8 @@ func HostSetup(inpPort string, inpHandshake bool, inpEnc string, inpUsername str
 		utils.Err(err, true)
 	}
 	// Set up listener for every port in range
-	for _, port := range port {
-
+	for _, port := range ports {
+		log.Println(port)
 		// wg = WaitGroup (Variable to wait until variable hits 0)
 		wg.Add(1)
 

@@ -19,7 +19,6 @@ func init() {
 	connectCmd.Flags().StringP("host", "d", "", "Host/destination to connect to")
 	connectCmd.Flags().StringP("port", "p", "", "Port of host to connect to")
 
-	connectCmd.Flags().BoolP("handshake", "s", true, "Perform a handshake with another gwire client")
 	connectCmd.Flags().BoolP("time", "t", true, "Display time for each message")
 	connectCmd.Flags().StringP("encrypt", "e", "auto", "Encryption to set up with handshake")
 	connectCmd.Flags().StringP("username", "u", "anonymous", "Username to perform handshake with")
@@ -30,7 +29,7 @@ func connect(cmd *cobra.Command, args []string) {
 	host, _ := cmd.Flags().GetString("host")
 	port, _ := cmd.Flags().GetString("port")
 
-	exchangeInfo, _ := cmd.Flags().GetBool("handshake")
+	exchangeInfo, _ := rootCmd.Flags().GetBool("setup")
 
 	username, _ := cmd.Flags().GetString("username")
 	enc, _ := cmd.Flags().GetString("encrypt")
