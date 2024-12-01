@@ -11,8 +11,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "gwire",
-	Short: "A tool for encrypted p2p network chatting",
+	Use:     "gwire",
+	Version: "v1.3.1",
+	Short:   "A tool for encrypted p2p network chatting",
 	Long: `Gwire is a tool for chatting on a direct connection without a middleman
 It connects using a host IP and a port and uses either AES with a preset key, or generates a key via RSA.
 All of the chatting is encrypted with AES.`,

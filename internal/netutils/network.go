@@ -1,20 +1,20 @@
 package netutils
 
 import (
-	"bufio"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"log"
-	"math"
+	"io/ioutil"
 	"net"
-	"os"
+	"net/http"
 	"os/exec"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/adzsx/gwire/internal/utils"
 )
+
+type IP struct {
+	Query string
+}
 
 var (
 	colorList []string = []string{"\033[92m", "\033[94m", "\033[95m", "\033[96m"}
@@ -28,37 +28,6 @@ func Subnet() string {
 	cidr, _ := net.InterfaceAddrs()
 
 	return fmt.Sprint(cidr[1])
-}
-
-func CalcAddr(cidr string) (string, string) {
-	mask := utils.FilterChar(cidr, "/", false)
-	maskN, err := strconv.Atoi(mask)
-
-	utils.Err(err, true)
-
-	var subnetmask []string
-
-	for i := 0; i < int(math.Floor(float64(maskN)/8)); i++ {
-		subnetmask = append(subnetmask, "255")
-	}
-
-	maskN -= len(subnetmask) * 8
-
-	if maskN != 0 {
-		converted := 0
-		for i := 0; i <= maskN; i++ {
-			converted += 256 >> maskN
-		}
-		log.Println(converted)
-		subnetmask = append(subnetmask, strconv.Itoa(converted))
-	}
-
-	rest := 4 - len(subnetmask)
-	for i := 0; i < rest; i++ {
-		subnetmask = append(subnetmask, "0")
-	}
-
-	return utils.FilterChar(cidr, "/", true), strings.Join(subnetmask, ".")
 }
 
 func GetHosts(cidr string) ([]string, error) {
@@ -87,7 +56,7 @@ func incrementIP(ip net.IP) {
 	}
 }
 
-func Info() (string, string, string, string) {
+func NetworkInfo() (string, string, string) {
 	ip, mask := CalcAddr(Subnet())
 	list, err := GetHosts(Subnet())
 	if err != nil {
@@ -95,7 +64,7 @@ func Info() (string, string, string, string) {
 	}
 	nHosts := strconv.Itoa(len(list))
 
-	return ip, mask, nHosts, ""
+	return ip, mask, nHosts
 }
 
 func AddMsg(msg string, gui bool) {
@@ -109,103 +78,6 @@ func AddMsg(msg string, gui bool) {
 
 }
 
-func ScanRange(ips []string, port string) (string, net.Conn) {
-	connChan := make(chan net.Conn)
-
-	for _, element := range ips {
-		address := element + ":" + port
-		counter++
-		go scan(address, connChan)
-	}
-
-	for counter > 0 {
-		time.Sleep(time.Millisecond * 100)
-		if counter == 0 {
-			break
-		}
-	}
-
-	if len(connChan) == 0 && !accept {
-		utils.Err(errors.New("no host found"), true)
-		os.Exit(0)
-	}
-
-	sconn = <-connChan
-
-	ip := utils.FilterChar(sconn.RemoteAddr().String(), ":", true)
-
-	return ip, sconn
-}
-
-func scan(address string, connChan chan net.Conn) {
-	ping := Ping(utils.FilterChar(address, ":", true))
-	if !ping {
-		time.Sleep(time.Millisecond)
-		counter--
-		return
-	}
-	conn, err := net.Dial("tcp", address)
-
-	if err != nil {
-		/* log.Println(counter) */
-		time.Sleep(time.Millisecond)
-		counter--
-		return
-	}
-
-	for found {
-		if !found {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-
-	for {
-		if !found {
-			found = true
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Printf("Found open port on %v\nDo you want to connect? [y/n] ", utils.FilterChar(address, ":", true))
-			input, _ := reader.ReadString('\n')
-
-			input = input[0:1]
-
-			if input == "n" || input == "no" {
-
-				counter--
-				if counter == 0 {
-					return
-				}
-				reader = bufio.NewReader(os.Stdin)
-				fmt.Print("Continue scan anyways? [y/n] ")
-				input, _ := reader.ReadString('\n')
-
-				input = input[0:1]
-
-				log.Println()
-
-				found = false
-
-				if input == "n" || input == "no" {
-					conn.Close()
-					os.Exit(0)
-				} else {
-					return
-
-				}
-			}
-			accept = true
-
-			counter = 0
-
-			connChan <- conn
-		}
-
-		time.Sleep(time.Second)
-
-	}
-
-}
-
 func Ping(ip string) bool {
 
 	cmd := exec.Command("ping", "-i", "0.2", "-c", "3", "-w", "1", ip)
@@ -215,4 +87,22 @@ func Ping(ip string) bool {
 
 	return output > 1
 
+}
+
+func GetPublicIP() string {
+	req, err := http.Get("http://ip-api.com/json/")
+	if err != nil {
+		return err.Error()
+	}
+	defer req.Body.Close()
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return err.Error()
+	}
+
+	var ip IP
+	json.Unmarshal(body, &ip)
+
+	return ip.Query
 }

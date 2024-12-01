@@ -9,9 +9,7 @@ import (
 )
 
 // Set up listener for each port on list
-func HostSetup(inpHost string, inpPort string, inpHandshake bool, inpEnc string, inpUsername string, time bool) {
-
-	host = inpHost
+func HostSetup(inpPort string, inpHandshake bool, inpEnc string, inpUsername string, time bool) {
 	port = inpPort
 	handshake = inpHandshake
 	enc = inpEnc

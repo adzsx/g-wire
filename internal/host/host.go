@@ -22,7 +22,6 @@ var (
 	wg   sync.WaitGroup
 	sent int
 
-	host        string
 	port        string
 	handshake   bool
 	enc         string
