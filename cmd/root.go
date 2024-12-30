@@ -4,10 +4,8 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
 	"os"
 
-	"github.com/adzsx/gwire/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -42,14 +40,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.PersistentFlags().IntP("verbose", "v", 0, "verbose output")
-	rootCmd.PersistentFlags().BoolP("setup", "s", false, "Setup a gwire chat with another gwire client")
-	rootCmd.PersistentFlags().BoolP("no-fmt", "f", false, "disable ANSI formatting")
-
-	format, err := rootCmd.Flags().GetBool("no-fmt")
-	log.Println(err)
-	log.Println(format)
-	utils.Format = !format
-	utils.Verbose, _ = rootCmd.Flags().GetInt("verbose")
-	log.Println(utils.Verbose)
+	rootCmd.PersistentFlags().IntP("verbose", "v", 0, "verbose output (1-5)")
 }

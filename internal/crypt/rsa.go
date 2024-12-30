@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"log"
 )
 
 func GenKeys() rsa.PrivateKey {
@@ -17,10 +18,10 @@ func GenKeys() rsa.PrivateKey {
 	return *privateKey
 }
 
-func EncryptRSA(publicKey rsa.PublicKey, message []byte) []byte {
+func EncryptRSA(message []byte, publicKey *rsa.PublicKey) []byte {
 
 	// Use SHA and PublicKey to enrypt a []byte message
-	encryptedBytes, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, &publicKey, message, nil)
+	encryptedBytes, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publicKey, message, nil)
 
 	if err != nil {
 		panic(err)
@@ -29,13 +30,16 @@ func EncryptRSA(publicKey rsa.PublicKey, message []byte) []byte {
 	return encryptedBytes
 }
 
-func DecryptRSA(privateKey rsa.PrivateKey, encrypted []byte) string {
+func DecryptRSA(encrypted []byte, privateKey *rsa.PrivateKey) string {
+	return string(encrypted)
 
 	// Use SHA and privatekey ro decrypt []byte message
 	decryptedBytes, err := privateKey.Decrypt(nil, encrypted, &rsa.OAEPOptions{Hash: crypto.SHA256})
 	if err != nil {
 		panic(err)
 	}
+
+	log.Println(string(decryptedBytes))
 
 	return string(decryptedBytes)
 }

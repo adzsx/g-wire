@@ -2,17 +2,15 @@ package utils
 
 import (
 	"fmt"
-	"runtime"
 
 	"log"
-	"math/rand"
 	"os"
 	"strings"
 )
 
 var (
 	Verbose int
-	Format  bool
+	Format  bool = true
 )
 
 func Err(err error, critical bool) {
@@ -39,26 +37,23 @@ func InSlice(s []string, str string) bool {
 // Verbose print
 func Print(v any, level int) {
 
-	if runtime.GOOS == "windows" {
-		return
-	}
-
-	Ansi("\033[33m")
-	Ansi("\x1b[s\033[999B")
-	fmt.Println()
-	Ansi("\033[2A\033[999D\033[K\033[L")
-
-	log.SetFlags(log.Ltime)
-
+	// Ansi("\033[33m")
+	// Ansi("\x1b[s\033[999B")
+	// Ansi("\033[2A\033[999D\033[K\033[L")
 	if Verbose >= level {
-		log.Print("System: ", v)
+		log.SetFlags(0)
+
+		Ansi("\033[36m")
+		fmt.Print("System: ")
+
+		log.Print(v)
+		Ansi("\033[0m")
 	}
 
-	Ansi("\033[0m\x1b[u")
+	// Ansi("\033[0m\x1b[u")
 }
 
 func Ansi(inp string) {
-	log.Println(Format)
 	if Format {
 		fmt.Print(inp)
 	}
@@ -105,21 +100,4 @@ func aton(letter rune) int {
 
 	num := int(uppercaseLetter[0] - 'A' + 1)
 	return num
-}
-
-func GetRandomString(strings []string, username string) string {
-	if len(strings) == 0 {
-		return "" // Return an empty string if the input slice is empty
-	}
-
-	var seed int64
-
-	for _, char := range username {
-		seed += int64(aton(char))
-	}
-
-	rand.Seed(seed)
-
-	randomIndex := rand.Intn(len(strings))
-	return strings[randomIndex]
 }

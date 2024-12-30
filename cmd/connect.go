@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/adzsx/gwire/internal/client"
+	"github.com/adzsx/gwire/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -20,20 +21,16 @@ func init() {
 	connectCmd.Flags().StringP("port", "p", "", "Port of host to connect to")
 
 	connectCmd.Flags().BoolP("time", "t", true, "Display time for each message")
-	connectCmd.Flags().StringP("encrypt", "e", "auto", "Encryption to set up with handshake")
-	connectCmd.Flags().StringP("username", "u", "anonymous", "Username to perform handshake with")
-
+	connectCmd.Flags().BoolP("encrypt", "e", false, "use encryption")
 }
 
 func connect(cmd *cobra.Command, args []string) {
 	host, _ := cmd.Flags().GetString("host")
 	port, _ := cmd.Flags().GetString("port")
 
-	exchangeInfo, _ := rootCmd.Flags().GetBool("setup")
-
-	username, _ := cmd.Flags().GetString("username")
-	enc, _ := cmd.Flags().GetString("encrypt")
+	enc, _ := cmd.Flags().GetBool("encrypt")
 	time, _ := cmd.Flags().GetBool("time")
+	utils.Verbose, _ = rootCmd.Flags().GetInt("verbose")
 	//timeout, _ := cmd.Flags().GetString("timeout")
-	client.ClientSetup(host, port, exchangeInfo, enc, username, time)
+	client.ClientSetup(host, port, enc, time)
 }

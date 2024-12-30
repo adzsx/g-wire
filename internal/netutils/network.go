@@ -67,17 +67,6 @@ func NetworkInfo() (string, string, string) {
 	return ip, mask, nHosts
 }
 
-func AddMsg(msg string, gui bool) {
-	fmt.Println()
-	utils.Ansi("\033[2A\033[999D\033[K\033[L")
-
-	color := utils.GetRandomString(colorList, utils.FilterChar(msg, ">", true))
-	utils.Ansi(color)
-	fmt.Print(msg)
-	utils.Ansi("\033[999B\033[999D\033[1C")
-
-}
-
 func Ping(ip string) bool {
 
 	cmd := exec.Command("ping", "-i", "0.2", "-c", "3", "-w", "1", ip)

@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"log"
+	"os"
+
 	"github.com/adzsx/gwire/internal/host"
+	"github.com/adzsx/gwire/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -16,22 +20,26 @@ var listenCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listenCmd)
 
-	listenCmd.Flags().StringSliceP("port", "p", []string{}, "Port of host to connect to")
+	listenCmd.Flags().IntP("port", "p", 0, "Port of host to connect to")
+	listenCmd.Flags().StringP("source", "s", "", "Filter to single IP source IP")
 
 	listenCmd.Flags().BoolP("time", "t", true, "Display time for each message")
-	listenCmd.Flags().StringP("encrypt", "e", "auto", "Encryption to set up with handshake")
-	listenCmd.Flags().StringP("username", "u", "anonymous", "Username to perform handshake with")
-
+	listenCmd.Flags().BoolP("encrypt", "e", false, "Encryption to set up with handshake")
 }
 
 func listen(cmd *cobra.Command, args []string) {
-	ports, _ := cmd.Flags().GetStringSlice("port")
+	port, _ := cmd.Flags().GetInt("port")
 
-	exchangeInfo, _ := rootCmd.Flags().GetBool("setup")
+	if port == 0 {
+		log.Fatalln("Port not specified")
+		os.Exit(1)
+	}
 
-	username, _ := cmd.Flags().GetString("username")
-	enc, _ := cmd.Flags().GetString("encrypt")
+	src, _ := cmd.Flags().GetString("source")
+	enc, _ := cmd.Flags().GetBool("encrypt")
 	time, _ := cmd.Flags().GetBool("time")
+	utils.Verbose, _ = rootCmd.Flags().GetInt("verbose")
+
 	//timeout, _ := cmd.Flags().GetString("timeout")
-	host.HostSetup(ports, exchangeInfo, enc, username, time)
+	host.HostSetup(port, src, enc, time)
 }

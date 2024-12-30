@@ -1,51 +1,59 @@
 package host
 
 import (
+	"crypto/x509"
+	"errors"
 	"log"
+	"net"
 	"os"
+	"strconv"
+	"strings"
 
+	"github.com/adzsx/gwire/internal/crypt"
 	"github.com/adzsx/gwire/internal/utils"
-	"github.com/adzsx/gwire/pkg/crypt"
+)
+
+var (
+	conn net.Conn
 )
 
 // Set up listener for each port on list
-func HostSetup(inpPort []string, inpHandshake bool, inpEnc string, inpUsername string, time bool) {
-	ports = inpPort
-	//handshake = inpHandshake
-	enc = inpEnc
-	username = inpUsername
+func HostSetup(port int, src string, enc bool, time bool) {
+	log.SetFlags(0)
 	displayTime = time
 	// Global slice for distributing messages
-	var message = [][]string{}
 
-	if enc == "auto" {
-		auto = true
-		var err error
-		utils.Print("Generating password\n", 2)
-		enc, err = crypt.GenPasswd()
-		utils.Err(err, true)
-	}
-	// Set up listener for every port in range
-	for _, port := range ports {
-		log.Println(port)
-		// wg = WaitGroup (Variable to wait until variable hits 0)
-		wg.Add(1)
+	sPort := strconv.Itoa(port)
 
-		go connSetup(string(port), &message)
+	//Listen and connect
+	ln, err := net.Listen("tcp", ":"+sPort)
 
+	if err != nil && strings.Contains(err.Error(), "permission denied") {
+		log.Fatalln("Permission denied.\nTry again with root or take a port above 1023")
+		os.Exit(0)
 	}
 
-	// Wait untill wg is 0
-	wg.Wait()
+	utils.Print("Listening on port "+sPort, 1)
 
-	defer os.Exit(0)
-}
+	for {
 
-func connSetup(port string, message *[][]string) {
+		conn, err = ln.Accept()
+		if err != nil {
+			log.Fatalln("Error accepting connection:", err.Error())
+		}
 
-	conn := listen(port)
+		if src != strings.Split(conn.RemoteAddr().String(), ":")[0] && src != "" {
+			utils.Print("Rejecting "+conn.RemoteAddr().String()+" (Not matching src)", 2)
+			conn.Close()
+			continue
+		}
 
-	if auto {
+		break
+	}
+
+	utils.Print("Connected to "+conn.RemoteAddr().String(), 0)
+
+	if enc && 1 == 2 {
 		err := InitConn(conn)
 		if err != nil {
 			log.Println(err)
@@ -55,6 +63,50 @@ func connSetup(port string, message *[][]string) {
 
 	utils.Print("Setup finished\n", 1)
 
-	go hostLoop(conn, port, message)
+	hostLoop(conn, sPort)
+}
 
+func InitConn(conn net.Conn) error {
+	// Make buffer for receiving RSA public key
+	utils.Print("Waiting for RSA key from "+utils.FilterChar(conn.RemoteAddr().String(), ":", true)+"\n", 1)
+	buffer := make([]byte, 4096)
+	bytes, err := conn.Read(buffer)
+	if err != nil {
+		return errors.New("connection closed")
+	}
+	sentPublicKey := buffer[:bytes]
+
+	// Convert bytes back to public key
+	publicKey, err := x509.ParsePKCS1PublicKey(sentPublicKey)
+
+	if err != nil {
+		return errors.New("received data not RSA publickey")
+	}
+
+	utils.Print("Publickey received from "+utils.FilterChar(conn.RemoteAddr().String(), ":", true)+"\n", 1)
+
+	// Send encrypted AES key over connection
+	utils.Print("Sending Password", 2)
+
+	encKey := crypt.EncryptRSA([]byte(enc), publicKey)
+	conn.Write(encKey)
+	utils.Print("Sent password. Package length: "+strconv.Itoa(len(encKey)), 2)
+
+	utils.Print("Waiting for control package", 2)
+
+	buffer = make([]byte, 88)
+	_, err = conn.Read(buffer)
+	utils.Err(err, true)
+	data := string(buffer)
+
+	utils.Print("Received control package", 2)
+
+	if crypt.DecryptAES(data, []byte(enc)) != enc {
+		conn.Write([]byte("wrong password"))
+		return errors.New("wrong password")
+	}
+
+	conn.Write([]byte(crypt.EncryptAES("success", []byte(enc))))
+
+	return nil
 }
