@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/adzsx/gwire/cmd"
+	"github.com/adzsx/gwire/internal/scan"
 )
 
 func main() {
