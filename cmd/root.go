@@ -13,10 +13,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:     "gwire",
 	Version: "v1.4.0",
-	Short:   "A tool for encrypted p2p network chatting",
-	Long: `Gwire is a tool for chatting on a direct connection without a middleman
-It connects using a host IP and a port and uses either AES with a preset key, or generates a key via RSA.
-All of the chatting is encrypted with AES.`,
+	Short:   "Network related operations",
+	Long:    `Gwire is a tool for doing all sorts of network operations, such as port and host discovery, TCP connections and half open TCP.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },

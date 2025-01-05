@@ -3,6 +3,8 @@ package scan
 import (
 	"net"
 	"time"
+
+	"github.com/adzsx/gwire/internal/utils"
 )
 
 func ScanRange(ips []string, port string) []string {
@@ -13,6 +15,7 @@ func ScanRange(ips []string, port string) []string {
 
 func Ping(address string) bool {
 	conn, err := net.DialTimeout("ip4:icmp", address, time.Second)
+	utils.Err(err, false)
 	if err == nil {
 		defer conn.Close()
 		return true
