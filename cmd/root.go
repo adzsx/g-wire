@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -14,7 +11,7 @@ var rootCmd = &cobra.Command{
 	Use:     "gwire",
 	Version: "v1.4.0",
 	Short:   "Network related operations",
-	Long:    `Gwire is a tool for doing all sorts of network operations, such as port and host discovery, TCP connections and half open TCP.`,
+	Long:    `Gwire is a tool for doing all sorts of network operations, such as port and host discovery, TCP connections and half open TCPs.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },

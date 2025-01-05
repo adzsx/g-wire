@@ -1,3 +1,7 @@
+/*
+Copyright (C) 2025 adzsx
+*/
+
 package main
 
 import (
